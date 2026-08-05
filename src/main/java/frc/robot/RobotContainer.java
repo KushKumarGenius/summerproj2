@@ -11,6 +11,9 @@ import frc.robot.subsystems.ExampleSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.intake.IntakeIn;
+import frc.robot.commands.intake.IntakeOut;
+import frc.robot.subsystems.intake.Intake;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -21,6 +24,10 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
+
+  // Create one Intake object and share it with the intake commands below.
+  // RobotContainer is where the robot's pieces are connected together.
+  private final Intake m_intake = new Intake();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
@@ -45,6 +52,16 @@ public class RobotContainer {
     // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
     new Trigger(m_exampleSubsystem::exampleCondition)
         .onTrue(new ExampleCommand(m_exampleSubsystem));
+
+    // Hold the right bumper to run the intake inward.
+    // whileTrue() cancels IntakeIn automatically when the bumper is released.
+    m_driverController.rightBumper()
+        .whileTrue(new IntakeIn(m_intake));
+
+    // Hold the left bumper to run the intake outward/eject a game piece.
+    // IntakeOut also stops the intake when the bumper is released.
+    m_driverController.leftBumper()
+        .whileTrue(new IntakeOut(m_intake));
 
     // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
     // cancelling on release.
