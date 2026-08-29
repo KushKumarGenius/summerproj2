@@ -1,0 +1,26 @@
+package frc.robot.commands.leds;
+
+import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.led.LED;
+
+/** Sets an LED color once. */
+public class LedSetColor extends Command {
+  private final LED leds;
+  private final LED.Color color;
+
+  public LedSetColor(LED leds, LED.Color color) {
+    this.leds = leds;
+    this.color = color;
+    addRequirements(leds);
+  }
+
+  @Override
+  public void initialize() {
+    leds.setColor(color);
+  }
+
+  @Override
+  public boolean isFinished() {
+    return true;
+  }
+}
