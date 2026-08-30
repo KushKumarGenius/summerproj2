@@ -3,60 +3,114 @@ package frc.robot.subsystems.drivetrain;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
-/** Converts chassis requests into commands for one swerve module. */
+/** A swerve module wrapper that keeps control logic independent from motor vendors. */
 public class SwerveModule {
-  private final SwerveModuleIO io;
-  private final SwerveModuleIO.SwerveModuleIOInputs inputs =
-      new SwerveModuleIO.SwerveModuleIOInputs();
-  private final int moduleNumber;
-  private final double maxSpeed;
-  private Rotation2d lastAngle = new Rotation2d();
+  public enum Mode {
+    HIGH_SPEED,
+    HIGH_CONTROL
+  }
 
-  public SwerveModule(SwerveModuleIO io, int moduleNumber, double maxSpeed) {
+  private final SwerveModuleIO io;
+  private final SwerveModuleIOInputsAutoLogged inputs = new SwerveModuleIOInputsAutoLogged();
+  private final int moduleNumber;
+  private final double maxSpeedMetersPerSecond;
+
+  private double driveSetpointMetersPerSecond;
+  private Rotation2d steerSetpoint;
+
+  public SwerveModule(
+      SwerveModuleIO io, int moduleNumber, double maxSpeedMetersPerSecond) {
     this.io = io;
     this.moduleNumber = moduleNumber;
-    this.maxSpeed = maxSpeed;
+    this.maxSpeedMetersPerSecond = maxSpeedMetersPerSecond;
+    io.setBrakeMode(true);
   }
 
-  public void periodic() {
+  /** Reads and logs hardware inputs. */
+  public void inputPeriodic() {
     io.updateInputs(inputs);
+    Logger.processInputs("Drive/Module" + moduleNumber, inputs);
   }
 
-  public void setDesiredState(SwerveModuleState desiredState, boolean openLoop, boolean forceAngle) {
-    desiredState = SwerveModuleState.optimize(desiredState, getState().angle);
+  /** Compatibility alias for command-based tests and callers. */
+  public void periodic() {
+    inputPeriodic();
+  }
 
-    if (openLoop) {
-      io.setDriveVoltage(desiredState.speedMetersPerSecond / maxSpeed * 12.0);
-    } else {
-      io.setDriveVoltage(desiredState.speedMetersPerSecond / maxSpeed * 12.0);
+  /** Sends the current setpoint to the IO layer. */
+  public void outputPeriodic(Mode mode) {
+    if (steerSetpoint == null) {
+      io.stop();
+      return;
     }
 
-    if (forceAngle || Math.abs(desiredState.speedMetersPerSecond) > maxSpeed * 0.01) {
-      lastAngle = desiredState.angle;
+    io.setSteerPosition(steerSetpoint);
+    io.setDriveOpenLoop(
+        DrivetrainConstants.MAX_VOLTAGE
+            * driveSetpointMetersPerSecond
+            / maxSpeedMetersPerSecond);
+  }
+
+  /** Optimizes the module state and stores it for outputPeriodic(). */
+  @AutoLogOutput(key = "Drive/ModuleSetpoints/Module{moduleNumber}")
+  public SwerveModuleState runSetpoint(SwerveModuleState state) {
+    SwerveModuleState optimized = SwerveModuleState.optimize(state, getAngle());
+    optimized.cosineScale(getAngle());
+    steerSetpoint = optimized.angle;
+    driveSetpointMetersPerSecond = optimized.speedMetersPerSecond;
+    return optimized;
+  }
+
+  /** Compatibility method used by older callers. */
+  public void setDesiredState(
+      SwerveModuleState desiredState, boolean openLoop, boolean forceAngle) {
+    SwerveModuleState optimized = SwerveModuleState.optimize(desiredState, getAngle());
+    if (forceAngle || Math.abs(optimized.speedMetersPerSecond) > maxSpeedMetersPerSecond * 0.01) {
+      steerSetpoint = optimized.angle;
     }
-    io.setSteerAngle(lastAngle.getRadians());
+    driveSetpointMetersPerSecond = optimized.speedMetersPerSecond;
+    outputPeriodic(Mode.HIGH_CONTROL);
   }
 
-  public void setCharacterizationVoltage(double volts) {
-    lastAngle = new Rotation2d();
-    io.setSteerAngle(0.0);
-    io.setDriveVoltage(volts);
+  public void runCharacterization(double volts) {
+    steerSetpoint = new Rotation2d();
+    driveSetpointMetersPerSecond = 0.0;
+    io.setSteerPosition(steerSetpoint);
+    io.setDriveOpenLoop(volts);
   }
 
-  public SwerveModuleState getState() {
-    return new SwerveModuleState(inputs.driveVelocityMetersPerSecond, new Rotation2d(inputs.angleRadians));
+  public void stop() {
+    steerSetpoint = null;
+    driveSetpointMetersPerSecond = 0.0;
+    io.stop();
   }
 
+  public void setBrakeMode(boolean enabled) {
+    io.setBrakeMode(enabled);
+  }
+
+  public Rotation2d getAngle() {
+    return inputs.steerPosition_Rot2d;
+  }
+
+  @AutoLogOutput(key = "Drive/Module{moduleNumber}/Position")
   public SwerveModulePosition getPosition() {
-    return new SwerveModulePosition(inputs.driveDistanceMeters, new Rotation2d(inputs.angleRadians));
+    return new SwerveModulePosition(inputs.drivePosition_m, getAngle());
+  }
+
+  @AutoLogOutput(key = "Drive/Module{moduleNumber}/State")
+  public SwerveModuleState getState() {
+    return new SwerveModuleState(inputs.driveVelocity_mps, getAngle());
+  }
+
+  public SwerveModuleIO.SwerveModuleIOInputs getInputs() {
+    return inputs;
   }
 
   public int getModuleNumber() {
     return moduleNumber;
-  }
-
-  public void resetToAbsolute() {
-    io.resetToAbsolute();
   }
 }
