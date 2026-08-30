@@ -1,62 +1,131 @@
 package frc.robot.subsystems.drivetrain;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
-/** Lightweight swerve module model for desktop simulation. */
+/** Physics-backed swerve module IO used by desktop simulation. */
 public class SwerveModuleIOSim implements SwerveModuleIO {
   private static final double LOOP_PERIOD_SECONDS = 0.02;
-  private static final double MAX_SPEED_METERS_PER_SECOND = 4.5;
-  private static final double MAX_STEER_RATE_RADIANS_PER_SECOND = 10.0;
+  private static final double STEER_KP_VOLTS_PER_RADIAN = 8.5 / (2.0 * Math.PI);
+  private static final double SIM_INERTIA_KG_M2 = 0.0001;
 
-  private final int moduleNumber;
-  private double driveVoltage;
-  private double steerVoltage;
-  private double desiredAngle;
-  private double angle;
-  private double distance;
-  private double velocity;
+  private final DCMotorSim driveSim;
+  private final DCMotorSim steerSim;
+  private final PIDController driveController = new PIDController(0.05, 0.0, 0.0);
+  private final PIDController steerController =
+      new PIDController(STEER_KP_VOLTS_PER_RADIAN, 0.0, 0.0);
+
+  private double driveAppliedVolts;
+  private double steerAppliedVolts;
+  private double driveVelocitySetpointRadPerSec;
+  private boolean driveClosedLoop;
+  private boolean steerClosedLoop;
 
   public SwerveModuleIOSim(int moduleNumber) {
-    this.moduleNumber = moduleNumber;
+    driveSim =
+        new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(
+                DCMotor.getFalcon500(1),
+                SIM_INERTIA_KG_M2,
+                DrivetrainConstants.DRIVE_GEAR_RATIO),
+            DCMotor.getFalcon500(1));
+    steerSim =
+        new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(
+                DCMotor.getFalcon500(1), SIM_INERTIA_KG_M2, 1.0),
+            DCMotor.getFalcon500(1));
+    steerController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
   @Override
   public void updateInputs(SwerveModuleIOInputs inputs) {
-    double targetVelocity = driveVoltage / 12.0 * MAX_SPEED_METERS_PER_SECOND;
-    velocity += (targetVelocity - velocity) * 0.25;
-    distance += velocity * LOOP_PERIOD_SECONDS;
+    if (driveClosedLoop) {
+      driveAppliedVolts +=
+          driveController.calculate(
+              driveSim.getAngularVelocityRadPerSec(), driveVelocitySetpointRadPerSec);
+    } else {
+      driveController.reset();
+    }
 
-    double error = Math.IEEEremainder(desiredAngle - angle, 2.0 * Math.PI);
-    double angleStep = MathUtil.clamp(error, -MAX_STEER_RATE_RADIANS_PER_SECOND * LOOP_PERIOD_SECONDS,
-        MAX_STEER_RATE_RADIANS_PER_SECOND * LOOP_PERIOD_SECONDS);
-    angle += angleStep;
+    if (steerClosedLoop) {
+      steerAppliedVolts =
+          steerController.calculate(steerSim.getAngularPositionRad(), steerController.getSetpoint());
+    } else {
+      steerController.reset();
+    }
 
-    inputs.driveDistanceMeters = distance;
-    inputs.driveVelocityMetersPerSecond = velocity;
-    inputs.driveAppliedVolts = driveVoltage;
-    inputs.angleRadians = angle;
-    inputs.angleVelocityRadiansPerSecond = angleStep / LOOP_PERIOD_SECONDS;
-    inputs.angleAppliedVolts = steerVoltage;
+    driveAppliedVolts = MathUtil.clamp(driveAppliedVolts, -12.0, 12.0);
+    steerAppliedVolts = MathUtil.clamp(steerAppliedVolts, -12.0, 12.0);
+    driveSim.setInputVoltage(driveAppliedVolts);
+    steerSim.setInputVoltage(steerAppliedVolts);
+    driveSim.update(LOOP_PERIOD_SECONDS);
+    steerSim.update(LOOP_PERIOD_SECONDS);
+
+    double driveRotations = Units.radiansToRotations(driveSim.getAngularPositionRad());
+    double driveVelocityRotationsPerSecond =
+        Units.radiansToRotations(driveSim.getAngularVelocityRadPerSec());
+    inputs.driveConnected = true;
+    inputs.drivePosition_m = driveRotations * DrivetrainConstants.WHEEL_CIRCUMFERENCE_METERS;
+    inputs.driveVelocity_mps =
+        driveVelocityRotationsPerSecond * DrivetrainConstants.WHEEL_CIRCUMFERENCE_METERS;
+    inputs.driveAppliedVolts = driveAppliedVolts;
+    inputs.driveCurrentAmps = Math.abs(driveSim.getCurrentDrawAmps());
+
+    inputs.steerConnected = true;
+    inputs.steerEncoderConnected = true;
+    inputs.steerPosition_Rot2d = new Rotation2d(steerSim.getAngularPositionRad());
+    inputs.steerAbsolutePosition_Rot2d = inputs.steerPosition_Rot2d;
+    inputs.steerVelocity_radps = steerSim.getAngularVelocityRadPerSec();
+    inputs.steerAppliedVolts = steerAppliedVolts;
+    inputs.steerCurrentAmps = Math.abs(steerSim.getCurrentDrawAmps());
+
+    inputs.odometryTimestamps_s = new double[] {Timer.getFPGATimestamp()};
+    inputs.odometryDrivePositions_m = new double[] {inputs.drivePosition_m};
+    inputs.odometrySteerPositions_Rot2d = new Rotation2d[] {inputs.steerPosition_Rot2d};
   }
 
   @Override
-  public void setDriveVoltage(double volts) {
-    driveVoltage = MathUtil.clamp(volts, -12.0, 12.0);
+  public void setDriveOpenLoop(double volts) {
+    driveClosedLoop = false;
+    driveAppliedVolts = volts;
   }
 
   @Override
-  public void setSteerAngle(double angleRadians) {
-    desiredAngle = angleRadians;
-    steerVoltage = MathUtil.clamp(Math.IEEEremainder(angleRadians - angle, 2.0 * Math.PI), -1.0, 1.0) * 12.0;
+  public void setDriveVelocity(double velocityMetersPerSecond) {
+    driveClosedLoop = true;
+    driveVelocitySetpointRadPerSec =
+        velocityMetersPerSecond
+            / DrivetrainConstants.WHEEL_CIRCUMFERENCE_METERS
+            * 2.0
+            * Math.PI;
   }
 
   @Override
-  public void resetToAbsolute() {
-    angle = 0.0;
-    desiredAngle = 0.0;
+  public void setSteerOpenLoop(double volts) {
+    steerClosedLoop = false;
+    steerAppliedVolts = volts;
   }
 
-  public int getModuleNumber() {
-    return moduleNumber;
+  @Override
+  public void setSteerPosition(Rotation2d angle) {
+    steerClosedLoop = true;
+    steerController.setSetpoint(angle.getRadians());
+  }
+
+  @Override
+  public void setBrakeMode(boolean enabled) {}
+
+  @Override
+  public void stop() {
+    driveClosedLoop = false;
+    steerClosedLoop = false;
+    driveAppliedVolts = 0.0;
+    steerAppliedVolts = 0.0;
   }
 }
