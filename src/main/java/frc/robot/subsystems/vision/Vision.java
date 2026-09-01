@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drivetrain.Drivetrain;
+import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
   private final Drivetrain drivetrain;
@@ -20,7 +21,7 @@ public class Vision extends SubsystemBase {
     this.drivetrain = drivetrain;
     cameras = new Camera[io.length];
     for (int i = 0; i < io.length; i++) {
-      cameras[i] = new Camera(io[i]);
+      cameras[i] = new Camera(io[i], i);
     }
     fieldLayout = loadFieldLayout();
   }
@@ -39,6 +40,7 @@ public class Vision extends SubsystemBase {
     int visibleTags = 0;
     for (Camera camera : cameras) {
       camera.io.updateInputs(camera.inputs);
+      Logger.processInputs("Vision/Camera" + camera.index, camera.inputs);
       visibleTags += camera.inputs.tagCount;
       if (enabled && camera.inputs.hasEstimate) {
         drivetrain.addVisionMeasurement(
@@ -67,10 +69,12 @@ public class Vision extends SubsystemBase {
 
   private static class Camera {
     private final VisionIO io;
-    private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
+    private final VisionIOInputsAutoLogged inputs = new VisionIOInputsAutoLogged();
+    private final int index;
 
-    private Camera(VisionIO io) {
+    private Camera(VisionIO io, int index) {
       this.io = io;
+      this.index = index;
     }
   }
 }

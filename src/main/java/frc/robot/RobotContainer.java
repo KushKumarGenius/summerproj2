@@ -27,6 +27,7 @@ import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.led.LedIOReal;
 import frc.robot.subsystems.stinger.Stinger;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIOReal;
 import frc.robot.subsystems.vision.VisionIOSim;
 import java.util.Set;
@@ -54,9 +55,18 @@ public class RobotContainer {
         RobotBase.isReal()
             ? new Vision(
                 drivetrain,
-                new VisionIOReal("LeftCamera"),
-                new VisionIOReal("RightCamera"),
-                new VisionIOReal("Arducam_OV9281_Camera_4"))
+                new VisionIOReal(
+                    VisionConstants.FRONT_LEFT_CAMERA,
+                    VisionConstants.FRONT_LEFT_ROBOT_TO_CAMERA,
+                    drivetrain::getPose),
+                new VisionIOReal(
+                    VisionConstants.FRONT_RIGHT_CAMERA,
+                    VisionConstants.FRONT_RIGHT_ROBOT_TO_CAMERA,
+                    drivetrain::getPose),
+                new VisionIOReal(
+                    VisionConstants.BACK_CAMERA,
+                    VisionConstants.BACK_ROBOT_TO_CAMERA,
+                    drivetrain::getPose))
             : new Vision(
                 drivetrain,
                 new VisionIOSim(drivetrain::getPose),
