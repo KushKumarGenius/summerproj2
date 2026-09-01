@@ -3,7 +3,6 @@ package frc.robot.subsystems.led;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-/** Human-readable robot status display using the REV Blinkin pattern values. */
 public class LED extends SubsystemBase {
   public enum Color {
     RED(0.61),

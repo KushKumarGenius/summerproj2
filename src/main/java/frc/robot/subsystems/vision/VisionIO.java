@@ -2,7 +2,6 @@ package frc.robot.subsystems.vision;
 
 import edu.wpi.first.math.geometry.Pose2d;
 
-/** Hardware boundary for one AprilTag camera. */
 public interface VisionIO {
   class VisionIOInputs {
     public boolean connected;

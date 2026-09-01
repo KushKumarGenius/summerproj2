@@ -2,7 +2,6 @@ package frc.robot.subsystems.stinger;
 
 import edu.wpi.first.math.MathUtil;
 
-/** Simple extension model for desktop simulation. */
 public class StingerIOSim implements StingerIO {
   private static final double LOOP_PERIOD_SECONDS = 0.02;
   private static final double MAX_EXTENSION_INCHES = 25.0;

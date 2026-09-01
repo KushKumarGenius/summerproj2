@@ -1,6 +1,5 @@
 package frc.robot.subsystems.led;
 
-/** Stores the selected LED pattern for simulation and dashboard inspection. */
 public class LedIOSim implements LedIO {
   private double pattern;
 

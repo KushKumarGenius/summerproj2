@@ -2,7 +2,6 @@ package frc.robot.subsystems.intake;
 
 import edu.wpi.first.math.MathUtil;
 
-/** Small first-order intake model used by desktop simulation and unit tests. */
 public class IntakeIOSim implements IntakeIO {
   private static final double MAX_RPM = 5_000.0;
   private static final double LOOP_PERIOD_SECONDS = 0.02;

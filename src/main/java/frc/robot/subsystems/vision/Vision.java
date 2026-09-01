@@ -7,7 +7,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 
-/** Fuses estimates from the three 2023 PhotonVision cameras into drivetrain odometry. */
 public class Vision extends SubsystemBase {
   private final Drivetrain drivetrain;
   private final Camera[] cameras;

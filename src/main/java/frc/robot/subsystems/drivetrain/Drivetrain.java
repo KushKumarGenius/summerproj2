@@ -30,7 +30,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-/** Raymond-style IO-driven swerve drivetrain adapted for Team 2930's 2023 hardware. */
 public class Drivetrain extends SubsystemBase {
   private enum DriveMode {
     NORMAL,
@@ -57,7 +56,6 @@ public class Drivetrain extends SubsystemBase {
   private Translation2d centerOfRotation = new Translation2d();
   private double characterizationVolts;
 
-  /** Builds the real or simulated IO stack for the current runtime. */
   public Drivetrain() {
     this(createGyroIO(), createModuleIOs());
   }
@@ -108,7 +106,6 @@ public class Drivetrain extends SubsystemBase {
     outputPeriodic();
   }
 
-  /** Reads all IO once per loop and updates timestamped pose estimation. */
   private void inputPeriodic() {
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Drive/Gyro", gyroInputs);
@@ -143,7 +140,6 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Drivetrain/HeadingDeg", getRotation().getDegrees());
   }
 
-  /** Applies Raymond's acceleration limiting and anti-skew processing. */
   private void handle() {
     if (driveMode != DriveMode.NORMAL) {
       outputSpeeds = new ChassisSpeeds();
@@ -168,8 +164,6 @@ public class Drivetrain extends SubsystemBase {
                 requestedSpeeds.omegaRadiansPerSecond,
                 maxAngularDelta));
 
-    // Pre-rotate the velocity command to compensate for azimuth lag during combined translation
-    // and rotation. This is the same plant-specific correction used by Raymond's drive code.
     double perpendicularX = -outputSpeeds.vyMetersPerSecond;
     double perpendicularY = outputSpeeds.vxMetersPerSecond;
     outputSpeeds.vxMetersPerSecond +=
@@ -185,7 +179,6 @@ public class Drivetrain extends SubsystemBase {
     return current + MathUtil.clamp(target - current, -maxDelta, maxDelta);
   }
 
-  /** Optimizes, desaturates, logs, and sends module setpoints to the selected IO implementation. */
   private void outputPeriodic() {
     if (DriverStation.isDisabled()) {
       for (SwerveModule module : modules) {
@@ -231,7 +224,6 @@ public class Drivetrain extends SubsystemBase {
             : new ChassisSpeeds(xMetersPerSecond, yMetersPerSecond, omegaRadiansPerSecond);
   }
 
-  /** Accepts robot-relative speeds for autonomous and path-following callers. */
   public void drive(ChassisSpeeds robotRelativeSpeeds) {
     if (driveMode == DriveMode.NORMAL) {
       requestedSpeeds = robotRelativeSpeeds;

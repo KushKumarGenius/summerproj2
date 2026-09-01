@@ -6,7 +6,6 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-/** A swerve module wrapper that keeps control logic independent from motor vendors. */
 public class SwerveModule {
   public enum Mode {
     HIGH_SPEED,
@@ -20,6 +19,7 @@ public class SwerveModule {
 
   private double driveSetpointMetersPerSecond;
   private Rotation2d steerSetpoint;
+  private boolean absolutePositionInitialized;
 
   public SwerveModule(
       SwerveModuleIO io, int moduleNumber, double maxSpeedMetersPerSecond) {
@@ -29,18 +29,19 @@ public class SwerveModule {
     io.setBrakeMode(true);
   }
 
-  /** Reads and logs hardware inputs. */
   public void inputPeriodic() {
     io.updateInputs(inputs);
+    if (!absolutePositionInitialized) {
+      io.resetToAbsolute();
+      absolutePositionInitialized = true;
+    }
     Logger.processInputs("Drive/Module" + moduleNumber, inputs);
   }
 
-  /** Compatibility alias for command-based tests and callers. */
   public void periodic() {
     inputPeriodic();
   }
 
-  /** Sends the current setpoint to the IO layer. */
   public void outputPeriodic(Mode mode) {
     if (steerSetpoint == null) {
       io.stop();
@@ -54,7 +55,6 @@ public class SwerveModule {
             / maxSpeedMetersPerSecond);
   }
 
-  /** Optimizes the module state and stores it for outputPeriodic(). */
   @AutoLogOutput(key = "Drive/ModuleSetpoints/Module{moduleNumber}")
   public SwerveModuleState runSetpoint(SwerveModuleState state) {
     SwerveModuleState optimized = SwerveModuleState.optimize(state, getAngle());
@@ -64,7 +64,6 @@ public class SwerveModule {
     return optimized;
   }
 
-  /** Compatibility method used by older callers. */
   public void setDesiredState(
       SwerveModuleState desiredState, boolean openLoop, boolean forceAngle) {
     SwerveModuleState optimized = SwerveModuleState.optimize(desiredState, getAngle());

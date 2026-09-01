@@ -3,7 +3,6 @@ package frc.robot.commands.intake;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.intake.Intake;
 
-/** Spins the cone roller outward to score or release a cone. */
 public class IntakeScoreCone extends Command {
   private final Intake intake;
   private final double percent;

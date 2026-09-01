@@ -31,7 +31,6 @@ import frc.robot.subsystems.vision.VisionIOReal;
 import frc.robot.subsystems.vision.VisionIOSim;
 import java.util.Set;
 
-/** Wires subsystems, controllers, default commands, and autonomous routines together. */
 public class RobotContainer {
   private final CommandXboxController driverController =
       new CommandXboxController(Constants.OperatorConstants.DRIVER_CONTROLLER_PORT);

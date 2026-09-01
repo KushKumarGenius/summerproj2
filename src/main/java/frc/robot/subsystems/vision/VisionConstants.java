@@ -5,7 +5,6 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 
-/** Camera names and robot-to-camera measurements from Bot 2930's 2023 robot. */
 public final class VisionConstants {
   public static final String FRONT_LEFT_CAMERA = "LeftCamera";
   public static final String FRONT_RIGHT_CAMERA = "RightCamera";

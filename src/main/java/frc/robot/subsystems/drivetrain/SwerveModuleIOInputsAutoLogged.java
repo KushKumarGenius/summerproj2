@@ -3,7 +3,6 @@ package frc.robot.subsystems.drivetrain;
 import org.littletonrobotics.junction.LogTable;
 import org.littletonrobotics.junction.inputs.LoggableInputs;
 
-/** Generated-style AdvantageKit log wrapper for SwerveModuleIOInputs. */
 public class SwerveModuleIOInputsAutoLogged extends SwerveModuleIO.SwerveModuleIOInputs
     implements LoggableInputs, Cloneable {
   @Override

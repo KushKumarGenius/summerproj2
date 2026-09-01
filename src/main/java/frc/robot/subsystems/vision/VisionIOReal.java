@@ -1,11 +1,5 @@
 package frc.robot.subsystems.vision;
 
-/**
- * Safe placeholder for the PhotonVision adapter.
- *
- * <p>The camera names and network layout are kept in {@link VisionConstants}; the actual camera
- * library can be added here without changing the rest of the robot code.
- */
 public class VisionIOReal implements VisionIO {
   private final String cameraName;
 

@@ -3,7 +3,6 @@ package frc.robot.commands.intake;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.intake.Intake;
 
-/** Runs the intake inward for a cone until another command interrupts it. */
 public class IntakeGrabCone extends Command {
   private final Intake intake;
   private final double percent;

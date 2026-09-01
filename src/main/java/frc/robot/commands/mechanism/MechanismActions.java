@@ -13,7 +13,6 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.stinger.Stinger;
 
-/** High-level command sequences that coordinate the elevator, stinger, and intake. */
 public final class MechanismActions {
   private MechanismActions() {}
 

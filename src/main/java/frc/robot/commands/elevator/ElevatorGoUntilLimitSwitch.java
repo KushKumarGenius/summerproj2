@@ -3,7 +3,6 @@ package frc.robot.commands.elevator;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.elevator.Elevator;
 
-/** Homes the elevator by moving down until its lower limit is reached. */
 public class ElevatorGoUntilLimitSwitch extends Command {
   private final Elevator elevator;
   private final double percent;

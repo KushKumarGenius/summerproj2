@@ -4,11 +4,9 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 
-/** Geometry, hardware mapping, and motion limits for Rober's four-module swerve drive. */
 public final class DrivetrainConstants {
   private DrivetrainConstants() {}
 
-  /** Team 2930's 2023 MK4i L2 module configuration. */
   public record ModuleConfig(
       int driveCanId,
       int steerCanId,

@@ -10,7 +10,6 @@ import frc.robot.commands.stinger.StingerSetExtension;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.stinger.Stinger;
 
-/** Named, reusable mechanism positions from the 2023 Rober operator workflow. */
 public final class MechanismPositions {
   private MechanismPositions() {}
 

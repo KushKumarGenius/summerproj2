@@ -3,7 +3,6 @@ package frc.robot.subsystems.drivetrain;
 import org.littletonrobotics.junction.LogTable;
 import org.littletonrobotics.junction.inputs.LoggableInputs;
 
-/** Generated-style AdvantageKit log wrapper for GyroIOInputs. */
 public class GyroIOInputsAutoLogged extends GyroIO.GyroIOInputs
     implements LoggableInputs, Cloneable {
   @Override

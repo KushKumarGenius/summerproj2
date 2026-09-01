@@ -9,7 +9,6 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
-/** Physics-backed swerve module IO used by desktop simulation. */
 public class SwerveModuleIOSim implements SwerveModuleIO {
   private static final double LOOP_PERIOD_SECONDS = 0.02;
   private static final double STEER_KP_VOLTS_PER_RADIAN = 8.5 / (2.0 * Math.PI);

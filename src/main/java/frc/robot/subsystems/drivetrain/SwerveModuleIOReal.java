@@ -20,7 +20,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 
-/** Phoenix 6 implementation for the 2023 MK4i swerve hardware. */
 public class SwerveModuleIOReal implements SwerveModuleIO {
   private final DrivetrainConstants.ModuleConfig config;
   private final TalonFX driveMotor;

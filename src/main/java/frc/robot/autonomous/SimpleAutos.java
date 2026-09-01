@@ -13,7 +13,6 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.stinger.Stinger;
 
-/** Small autonomous routines that demonstrate command composition without PathPlanner. */
 public final class SimpleAutos {
   private SimpleAutos() {}
 

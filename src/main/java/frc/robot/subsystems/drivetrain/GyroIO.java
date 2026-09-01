@@ -3,7 +3,6 @@ package frc.robot.subsystems.drivetrain;
 import edu.wpi.first.math.geometry.Rotation2d;
 import org.littletonrobotics.junction.AutoLog;
 
-/** Hardware boundary for the robot gyro. */
 public interface GyroIO {
   @AutoLog
   class GyroIOInputs {

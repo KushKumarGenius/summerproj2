@@ -10,7 +10,6 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 
-/** Phoenix 6 implementation of the robot's Pigeon 2 gyro. */
 public class GyroIOPigeon2 implements GyroIO {
   private static final double UPDATE_FREQUENCY_HZ = 50.0;
 

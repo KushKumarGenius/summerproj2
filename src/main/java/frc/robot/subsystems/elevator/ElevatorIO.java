@@ -1,6 +1,5 @@
 package frc.robot.subsystems.elevator;
 
-/** Hardware boundary for the vertical elevator. */
 public interface ElevatorIO {
   class ElevatorIOInputs {
     public double heightInches;

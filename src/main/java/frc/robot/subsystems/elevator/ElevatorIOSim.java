@@ -2,7 +2,6 @@ package frc.robot.subsystems.elevator;
 
 import edu.wpi.first.math.MathUtil;
 
-/** Simple gravity-aware elevator model for desktop simulation. */
 public class ElevatorIOSim implements ElevatorIO {
   private static final double LOOP_PERIOD_SECONDS = 0.02;
   private static final double MAX_HEIGHT_INCHES = 48.7;

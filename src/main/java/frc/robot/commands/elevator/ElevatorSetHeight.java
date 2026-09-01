@@ -3,7 +3,6 @@ package frc.robot.commands.elevator;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.elevator.Elevator;
 
-/** Moves the elevator to a height and leaves its closed-loop hold active. */
 public class ElevatorSetHeight extends Command {
   private final Elevator elevator;
   private final double targetHeightInches;

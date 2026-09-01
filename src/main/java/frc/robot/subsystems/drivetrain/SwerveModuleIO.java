@@ -3,7 +3,6 @@ package frc.robot.subsystems.drivetrain;
 import edu.wpi.first.math.geometry.Rotation2d;
 import org.littletonrobotics.junction.AutoLog;
 
-/** Hardware boundary for one drive motor, one steering motor, and one absolute encoder. */
 public interface SwerveModuleIO {
   @AutoLog
   class SwerveModuleIOInputs {

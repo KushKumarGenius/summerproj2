@@ -6,7 +6,6 @@ import frc.robot.Constants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import java.util.function.DoubleSupplier;
 
-/** Maps the driver's Xbox controller sticks to field-relative swerve velocity. */
 public class TeleopSwerve extends Command {
   private final Drivetrain drivetrain;
   private final DoubleSupplier forward;

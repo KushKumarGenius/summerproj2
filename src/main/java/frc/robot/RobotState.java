@@ -2,7 +2,6 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-/** Operator-selected state shared by mechanism commands. */
 public class RobotState {
   private static final RobotState INSTANCE = new RobotState();
 

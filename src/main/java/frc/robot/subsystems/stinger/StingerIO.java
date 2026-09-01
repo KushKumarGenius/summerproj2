@@ -1,6 +1,5 @@
 package frc.robot.subsystems.stinger;
 
-/** Hardware boundary for the horizontal extension mechanism. */
 public interface StingerIO {
   class StingerIOInputs {
     public double extensionInches;

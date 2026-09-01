@@ -6,7 +6,6 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.stinger.Stinger;
 import java.util.function.DoubleSupplier;
 
-/** Manual stinger control with an elevator-clearance interlock. */
 public class StingerManualControl extends Command {
   private static final double MIN_CLEARANCE_HEIGHT_INCHES = 3.0;
 

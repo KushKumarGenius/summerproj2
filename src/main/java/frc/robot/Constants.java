@@ -1,6 +1,5 @@
 package frc.robot;
 
-/** Robot-wide configuration for Team 2930's 2023 Rober rewrite. */
 public final class Constants {
   public static final double LOOP_PERIOD_SECONDS = 0.02;
 
