@@ -1,53 +1,85 @@
 package frc.robot.subsystems.elevator;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.devices.halleffect.HallEffect;
+import frc.robot.devices.halleffect.HallEffectConfig;
+import frc.robot.devices.motor.Motor;
+import frc.robot.devices.motor.MotorConfig;
+import org.littletonrobotics.junction.Logger;
 
-/** Two-stage vertical elevator used to reach the Charged Up scoring rows. */
 public class Elevator extends SubsystemBase {
-  public static final double MAX_HEIGHT_INCHES = 48.7;
-  public static final double TOLERANCE_INCHES = 0.2;
+  public static final double MAX_HEIGHT_INCHES = ElevatorConstants.MAX_HEIGHT_INCHES;
+  public static final double TOLERANCE_INCHES = ElevatorConstants.TOLERANCE_INCHES;
 
-  private static final double MAX_MANUAL_VOLTS = 10.0;
-  private static final double HOLDING_VOLTS = 0.18;
-
-  private final ElevatorIO io;
-  private final ElevatorIO.ElevatorIOInputs inputs = new ElevatorIO.ElevatorIOInputs();
-  private final PIDController controller = new PIDController(0.12, 0.0, 0.0);
+  private final Motor motor;
+  private final HallEffect lowerLimit;
   private boolean closedLoop;
+  private double heightInches;
+  private double velocityInchesPerSecond;
   private double targetHeightInches;
   private double manualVolts;
 
-  /** Creates the simulation-backed elevator used on the desktop. */
   public Elevator() {
-    this(new ElevatorIOSim());
-  }
-
-  public Elevator(ElevatorIO io) {
-    this.io = io;
-    io.resetPosition(0.0);
-    controller.setTolerance(TOLERANCE_INCHES);
+    motor =
+        new Motor(
+            "Elevator/Motor",
+            new MotorConfig(ElevatorConstants.MOTOR_ID)
+                .withFollower(
+                    ElevatorConstants.FOLLOWER_ID, ElevatorConstants.FOLLOWER_ALIGNMENT)
+                .withInverted(true)
+                .withBrake(true)
+                .withSupplyCurrentLimit(10.0)
+                .withFeedforward(0.0, 0.0, 0.0, ElevatorConstants.HOLDING_VOLTS)
+                .withPid(0.12, 0.0, 0.0, MotorConfig.GravityType.ELEVATOR)
+                .withSimulation(
+                    ElevatorConstants.SIM_MOTOR,
+                    1.0,
+                    ElevatorConstants.SIM_MOMENT_OF_INERTIA));
+    lowerLimit =
+        new HallEffect(
+            "Elevator/LowerLimit",
+            new HallEffectConfig(ElevatorConstants.LOWER_LIMIT_DIO_CHANNEL)
+                .withInverted(ElevatorConstants.LOWER_LIMIT_INVERTED)
+                .withDebounce(
+                    ElevatorConstants.LOWER_LIMIT_DEBOUNCE_SECONDS,
+                    ElevatorConstants.LOWER_LIMIT_DEBOUNCE_TYPE));
+    motor.zeroPosition(0.0);
   }
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    motor.readInputs();
+    heightInches =
+        MathUtil.clamp(
+            motor.getPosition() * ElevatorConstants.HEIGHT_PER_MOTOR_ROTATION_INCHES,
+            0.0,
+            MAX_HEIGHT_INCHES);
+    velocityInchesPerSecond =
+        motor.getVelocity() * ElevatorConstants.HEIGHT_PER_MOTOR_ROTATION_INCHES;
+    if (RobotBase.isSimulation()) {
+      lowerLimit.setSimState(heightInches <= 0.0);
+    }
+    lowerLimit.readInputs();
 
     if (closedLoop) {
-      double feedbackVolts = controller.calculate(inputs.heightInches, targetHeightInches);
-      double gravityVolts = inputs.heightInches > 0.5 ? HOLDING_VOLTS : 0.0;
-      io.setVoltage(MathUtil.clamp(feedbackVolts + gravityVolts, -12.0, 12.0));
+      motor.setMotionMagic(targetHeightInches / ElevatorConstants.HEIGHT_PER_MOTOR_ROTATION_INCHES);
+    } else if ((atLowerLimit() && manualVolts < 0.0)
+        || (atUpperLimit() && manualVolts > 0.0)) {
+      motor.stop();
     } else {
-      io.setVoltage(manualVolts);
+      motor.setVoltage(manualVolts);
     }
 
-    SmartDashboard.putNumber("Elevator/HeightInches", inputs.heightInches);
+    SmartDashboard.putNumber("Elevator/HeightInches", heightInches);
     SmartDashboard.putNumber("Elevator/TargetHeightInches", targetHeightInches);
-    SmartDashboard.putNumber("Elevator/VelocityInchesPerSecond", inputs.velocityInchesPerSecond);
-    SmartDashboard.putBoolean("Elevator/AtLowerLimit", inputs.atLowerLimit);
-    SmartDashboard.putBoolean("Elevator/AtUpperLimit", inputs.atUpperLimit);
+    SmartDashboard.putNumber("Elevator/VelocityInchesPerSecond", velocityInchesPerSecond);
+    SmartDashboard.putBoolean("Elevator/AtLowerLimit", atLowerLimit());
+    SmartDashboard.putBoolean("Elevator/AtUpperLimit", atUpperLimit());
+    Logger.recordOutput("Elevator/HeightInches", heightInches);
+    Logger.recordOutput("Elevator/TargetHeightInches", targetHeightInches);
   }
 
   public void setHeightInches(double heightInches) {
@@ -57,31 +89,32 @@ public class Elevator extends SubsystemBase {
 
   public void setPercentOutput(double percent) {
     closedLoop = false;
-    manualVolts = MathUtil.clamp(percent, -1.0, 1.0) * MAX_MANUAL_VOLTS;
+    manualVolts = MathUtil.clamp(percent, -1.0, 1.0) * ElevatorConstants.MAX_MANUAL_VOLTS;
   }
 
   public void runVoltage(double volts) {
     closedLoop = false;
-    manualVolts = MathUtil.clamp(volts, -MAX_MANUAL_VOLTS, MAX_MANUAL_VOLTS);
+    manualVolts = MathUtil.clamp(volts, -ElevatorConstants.MAX_MANUAL_VOLTS, ElevatorConstants.MAX_MANUAL_VOLTS);
   }
 
   public void holdCurrentHeight() {
-    setHeightInches(inputs.heightInches);
+    setHeightInches(heightInches);
   }
 
   public void stop() {
     closedLoop = false;
     manualVolts = 0.0;
-    io.stop();
+    motor.stop();
   }
 
   public void zeroHeight() {
-    io.resetPosition(0.0);
+    motor.zeroPosition(0.0);
     targetHeightInches = 0.0;
+    heightInches = 0.0;
   }
 
   public boolean isAtHeight(double heightInches) {
-    return Math.abs(inputs.heightInches - heightInches) <= TOLERANCE_INCHES;
+    return Math.abs(this.heightInches - heightInches) <= TOLERANCE_INCHES;
   }
 
   public boolean isAtTarget() {
@@ -89,15 +122,15 @@ public class Elevator extends SubsystemBase {
   }
 
   public boolean atLowerLimit() {
-    return inputs.atLowerLimit;
+    return lowerLimit.get() || heightInches <= 0.0;
   }
 
   public boolean atUpperLimit() {
-    return inputs.atUpperLimit;
+    return heightInches >= MAX_HEIGHT_INCHES;
   }
 
   public double getHeightInches() {
-    return inputs.heightInches;
+    return heightInches;
   }
 
   public double getTargetHeightInches() {

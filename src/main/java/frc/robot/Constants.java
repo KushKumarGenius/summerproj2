@@ -13,8 +13,6 @@ public final class Constants {
   }
 
   public static final class CanId {
-    // These IDs document the 2023 hardware map. Hardware adapters can use them when vendor IO is
-    // added; the default project remains vendor-neutral and fully simulatable.
     public static final int STINGER_MOTOR = 5;
     public static final int INTAKE_MOTOR = 6;
     public static final int ELEVATOR_LEAD_MOTOR = 9;

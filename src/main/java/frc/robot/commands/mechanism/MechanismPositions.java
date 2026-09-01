@@ -62,7 +62,6 @@ public final class MechanismPositions {
         throw new IllegalStateException("Unhandled scoring row: " + row);
     }
 
-    // Retract before lowering the elevator, then extend only after clearing the bumper.
     return Commands.sequence(
         new StingerSetExtension(stinger, Constants.Stinger.STOW_EXTENSION_INCHES),
         new ElevatorSetHeight(elevator, height),

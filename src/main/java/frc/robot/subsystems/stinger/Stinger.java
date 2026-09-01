@@ -1,48 +1,82 @@
 package frc.robot.subsystems.stinger;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.devices.halleffect.HallEffect;
+import frc.robot.devices.halleffect.HallEffectConfig;
+import frc.robot.devices.motor.Motor;
+import frc.robot.devices.motor.MotorConfig;
+import org.littletonrobotics.junction.Logger;
 
-/** Horizontal telescoping mechanism that moves the intake to game pieces and nodes. */
 public class Stinger extends SubsystemBase {
-  public static final double MAX_EXTENSION_INCHES = 25.0;
-  public static final double TOLERANCE_INCHES = 0.25;
+  public static final double MAX_EXTENSION_INCHES = StingerConstants.MAX_EXTENSION_INCHES;
+  public static final double TOLERANCE_INCHES = StingerConstants.TOLERANCE_INCHES;
 
-  private final StingerIO io;
-  private final StingerIO.StingerIOInputs inputs = new StingerIO.StingerIOInputs();
-  private final PIDController controller = new PIDController(0.12, 0.0, 0.0);
+  private final Motor motor;
+  private final HallEffect retractedLimit;
   private boolean closedLoop;
+  private double extensionInches;
+  private double velocityInchesPerSecond;
   private double targetExtensionInches;
   private double manualVolts;
 
-  /** Creates the simulation-backed stinger used on the desktop. */
   public Stinger() {
-    this(new StingerIOSim());
-  }
-
-  public Stinger(StingerIO io) {
-    this.io = io;
-    io.resetPosition(0.0);
-    controller.setTolerance(TOLERANCE_INCHES);
+    motor =
+        new Motor(
+            "Stinger/Motor",
+            new MotorConfig(StingerConstants.MOTOR_ID)
+                .withInverted(true)
+                .withBrake(false)
+                .withSupplyCurrentLimit(20.0)
+                .withPid(0.12, 0.0, 0.0, MotorConfig.GravityType.NONE)
+                .withSimulation(
+                    StingerConstants.SIM_MOTOR,
+                    1.0,
+                    StingerConstants.SIM_MOMENT_OF_INERTIA));
+    retractedLimit =
+        new HallEffect(
+            "Stinger/RetractedLimit",
+            new HallEffectConfig(StingerConstants.RETRACTED_LIMIT_DIO_CHANNEL)
+                .withInverted(StingerConstants.RETRACTED_LIMIT_INVERTED)
+                .withDebounce(
+                    StingerConstants.RETRACTED_LIMIT_DEBOUNCE_SECONDS,
+                    StingerConstants.RETRACTED_LIMIT_DEBOUNCE_TYPE));
+    motor.zeroPosition(0.0);
   }
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    motor.readInputs();
+    extensionInches =
+        MathUtil.clamp(
+            motor.getPosition() * StingerConstants.INCHES_PER_MOTOR_ROTATION,
+            0.0,
+            MAX_EXTENSION_INCHES);
+    velocityInchesPerSecond =
+        motor.getVelocity() * StingerConstants.INCHES_PER_MOTOR_ROTATION;
+    if (RobotBase.isSimulation()) {
+      retractedLimit.setSimState(extensionInches <= 0.0);
+    }
+    retractedLimit.readInputs();
 
     if (closedLoop) {
-      io.setVoltage(MathUtil.clamp(controller.calculate(inputs.extensionInches, targetExtensionInches), -12.0, 12.0));
+      motor.setMotionMagic(targetExtensionInches / StingerConstants.INCHES_PER_MOTOR_ROTATION);
+    } else if ((atRetractedLimit() && manualVolts < 0.0)
+        || (atExtendedLimit() && manualVolts > 0.0)) {
+      motor.stop();
     } else {
-      io.setVoltage(manualVolts);
+      motor.setVoltage(manualVolts);
     }
 
-    SmartDashboard.putNumber("Stinger/ExtensionInches", inputs.extensionInches);
+    SmartDashboard.putNumber("Stinger/ExtensionInches", extensionInches);
     SmartDashboard.putNumber("Stinger/TargetExtensionInches", targetExtensionInches);
-    SmartDashboard.putNumber("Stinger/VelocityInchesPerSecond", inputs.velocityInchesPerSecond);
-    SmartDashboard.putBoolean("Stinger/AtRetractedLimit", inputs.atRetractedLimit);
-    SmartDashboard.putBoolean("Stinger/AtExtendedLimit", inputs.atExtendedLimit);
+    SmartDashboard.putNumber("Stinger/VelocityInchesPerSecond", velocityInchesPerSecond);
+    SmartDashboard.putBoolean("Stinger/AtRetractedLimit", atRetractedLimit());
+    SmartDashboard.putBoolean("Stinger/AtExtendedLimit", atExtendedLimit());
+    Logger.recordOutput("Stinger/ExtensionInches", extensionInches);
+    Logger.recordOutput("Stinger/TargetExtensionInches", targetExtensionInches);
   }
 
   public void setExtensionInches(double extensionInches) {
@@ -58,16 +92,17 @@ public class Stinger extends SubsystemBase {
   public void stop() {
     closedLoop = false;
     manualVolts = 0.0;
-    io.stop();
+    motor.stop();
   }
 
   public void zeroExtension() {
-    io.resetPosition(0.0);
+    motor.zeroPosition(0.0);
     targetExtensionInches = 0.0;
+    extensionInches = 0.0;
   }
 
   public boolean isAtExtension(double extensionInches) {
-    return Math.abs(inputs.extensionInches - extensionInches) <= TOLERANCE_INCHES;
+    return Math.abs(this.extensionInches - extensionInches) <= TOLERANCE_INCHES;
   }
 
   public boolean isAtTarget() {
@@ -75,15 +110,15 @@ public class Stinger extends SubsystemBase {
   }
 
   public boolean atRetractedLimit() {
-    return inputs.atRetractedLimit;
+    return retractedLimit.get() || extensionInches <= 0.0;
   }
 
   public boolean atExtendedLimit() {
-    return inputs.atExtendedLimit;
+    return extensionInches >= MAX_EXTENSION_INCHES;
   }
 
   public double getExtensionInches() {
-    return inputs.extensionInches;
+    return extensionInches;
   }
 
   public double getTargetExtensionInches() {
